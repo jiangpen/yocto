@@ -63,8 +63,8 @@ echo "builder ALL=(ALL) NOPASSWD: ALL" | sudo EDITOR='tee -a' visudo
 EOF
 
 
-sudo docker cp /mydrive/build/docker_build/build_pi.sh     $BMN:/home/builder/build_pi.sh
-sudo docker cp /mydrive/build/docker_build/meta-mygo     $BMN:/home/builder/
+sudo docker cp ./build_pi.sh     $BMN:/home/builder/build_pi.sh
+sudo docker cp ./meta-mygo     $BMN:/home/builder/
 
 echo "setting up git access"
 sudo docker exec $BMN locale-gen --purge en_US.UTF-8 
@@ -83,6 +83,17 @@ if [ $? -ne 0 ]; then  exit 1 ; fi
 echo "getting repo"
 cat <<EOF |sudo docker exec -w /home/builder --interactive $BMN bash -e
 
+
+    if [ -d /usr/local/go ] ; then
+    echo "go installed"
+    else
+    wget https://dl.google.com/go/go1.15.2.linux-amd64.tar.gz 
+    tar -xvf go1.15.2.linux-amd64.tar.gz
+    mv go /usr/local
+    fi
+     
+    export GOROOT=/usr/local/go 
+    export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
 	su - builder
 
 	mkdir -p /home/builder/WORK 
@@ -110,9 +121,8 @@ BMODE=${1:-KEEP}
 if [ "$BMODE" == "CLEAN" ]; then 
 echo "running docker cleanup"
 sudo docker stop $BMN || command_failed=1
-sudo docker rm -f $BMN || command_failed=1
-sudo rm -r $DHOME || command_failed=1
+#sudo docker rm -f $BMN || command_failed=1
+#sudo rm -r $DHOME || command_failed=1
 else
 echo "continue build"
 fi
-
